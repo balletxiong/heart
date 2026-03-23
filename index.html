@@ -3,106 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一份特别的礼物 🎁</title>
+    <title>遇见你，是银河赠予我的糖 ✨</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: #0a0a0a; /* 深色背景更有星空感 */
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
             font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
 
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+        canvas { position: absolute; top: 0; left: 0; }
 
         .container {
             position: relative;
-            z-index: 10;
+            z-index: 100;
             text-align: center;
-            pointer-events: none; /* 防止遮挡画布点击 */
+            user-select: none;
         }
 
-        .heart-box {
-            position: relative;
-            display: inline-block;
-            pointer-events: auto; /* 只有心形可以点 */
+        /* 霓虹爱心 */
+        .heart-wrapper {
             cursor: pointer;
             transition: transform 0.3s;
+            filter: drop-shadow(0 0 15px #ff4d6d);
         }
+        .heart-wrapper:active { transform: scale(0.9); }
 
-        .heart-box:hover {
-            transform: scale(1.1);
-        }
-
-        /* 核心爱心样式 */
         .heart {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             background: #ff4d6d;
             position: relative;
             transform: rotate(-45deg);
-            box-shadow: 0 0 40px #ff4d6d;
-            animation: pulse 1.5s infinite;
+            animation: beat 1.2s infinite;
         }
-
         .heart::before, .heart::after {
             content: '';
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             background: #ff4d6d;
             border-radius: 50%;
             position: absolute;
         }
+        .heart::before { top: -50px; left: 0; }
+        .heart::after { left: 50px; top: 0; }
 
-        .heart::before { top: -60px; left: 0; }
-        .heart::after { left: 60px; top: 0; }
-
-        @keyframes pulse {
-            0% { transform: rotate(-45deg) scale(1); box-shadow: 0 0 20px #ff4d6d; }
-            50% { transform: rotate(-45deg) scale(1.1); box-shadow: 0 0 50px #ff758c; }
-            100% { transform: rotate(-45deg) scale(1); box-shadow: 0 0 20px #ff4d6d; }
+        @keyframes beat {
+            0%, 100% { transform: rotate(-45deg) scale(1); }
+            50% { transform: rotate(-45deg) scale(1.15); }
         }
 
-        .text-content {
-            margin-top: 80px;
-            color: white;
+        .text-area {
+            margin-top: 60px;
+            min-height: 100px;
+        }
+
+        #title {
+            font-size: 24px;
+            color: #ffb3c1;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        #typed-text {
+            font-size: 20px;
+            color: #fff;
+            line-height: 1.6;
             text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
 
-        h1 { font-size: 28px; margin-bottom: 10px; color: #ff85a1; }
-        p { font-size: 18px; opacity: 0.8; letter-spacing: 2px; }
-
-        /* 点击后的文字淡入 */
-        #secret-msg {
-            margin-top: 20px;
-            font-size: 22px;
-            color: #ff4d6d;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 1s;
-        }
+        /* 隐藏音乐播放器 */
+        #bgm { display: none; }
     </style>
 </head>
 <body>
 
 <canvas id="canvas"></canvas>
+<audio id="bgm" loop src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
 
 <div class="container">
-    <div class="heart-box" id="heartBtn">
+    <div class="heart-wrapper" id="heartBtn">
         <div class="heart"></div>
     </div>
-    <div class="text-content">
-        <h1>Hey, 这里有个心愿</h1>
-        <p id="hint">点一下这颗心，把它拆开</p>
-        <div id="secret-msg"></div>
+    <div class="text-area">
+        <div id="title">点击这颗心，听听它的声音</div>
+        <div id="typed-text"></div>
     </div>
 </div>
 
@@ -110,97 +99,112 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const heartBtn = document.getElementById('heartBtn');
-    const secretMsg = document.getElementById('secret-msg');
-    const hint = document.getElementById('hint');
+    const typedText = document.getElementById('typed-text');
+    const title = document.getElementById('title');
+    const bgm = document.getElementById('bgm');
 
     let particles = [];
-    const colors = ['#ff4d6d', '#ff758c', '#ff85a1', '#f7cad0', '#ffffff'];
+    let hearts = [];
+    let stars = [];
 
-    // 设置画布大小
-    function resize() {
+    function init() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    class Particle {
-        constructor(x, y, isHeart = false) {
-            this.x = x;
-            this.y = y;
-            this.size = Math.random() * 5 + 2;
-            this.speedX = (Math.random() - 0.5) * 8;
-            this.speedY = (Math.random() - 0.5) * 8;
-            this.color = colors[Math.floor(Math.random() * colors.length)];
-            this.life = 1;
-            this.decay = Math.random() * 0.02 + 0.01;
+        // 初始化星星
+        for(let i=0; i<100; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                opacity: Math.random()
+            });
         }
-        draw() {
-            ctx.fillStyle = this.color;
-            ctx.globalAlpha = this.life;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fill();
+    }
+    window.onresize = init;
+    init();
+
+    // 粒子类
+    class Particle {
+        constructor(x, y) {
+            this.x = x; this.y = y;
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
+            this.life = 1;
+            this.color = `hsla(${Math.random()*20 + 340}, 100%, 70%, `;
         }
         update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            this.life -= this.decay;
+            this.x += this.vx; this.y += this.vy; this.life -= 0.02;
+        }
+        draw() {
+            ctx.fillStyle = this.color + this.life + ')';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI*2);
+            ctx.fill();
         }
     }
 
-    function createExplosion(x, y) {
-        for (let i = 0; i < 100; i++) {
-            particles.push(new Particle(x, y));
+    // 打字机效果
+    const script = [
+        "在这个无趣的世界里...",
+        "你是我唯一的星光 ✨",
+        "我想陪你看遍所有的流星",
+        "也想把这颗心，完完整整地交给你 ❤️"
+    ];
+    let lineIndex = 0;
+
+    function typeWriter(text, i, fnCallback) {
+        if (i < text.length) {
+            typedText.innerHTML = text.substring(0, i+1) +'<span aria-hidden="true">|</span>';
+            setTimeout(() => typeWriter(text, i + 1, fnCallback), 150);
+        } else if (typeof fnCallback == 'function') {
+            setTimeout(fnCallback, 1500);
         }
     }
 
+    function startTyping() {
+        if (lineIndex < script.length) {
+            typeWriter(script[lineIndex], 0, () => {
+                lineIndex++;
+                startTyping();
+            });
+        }
+    }
+
+    // 动画循环
     function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 背景微光粒子
-        if (Math.random() > 0.9) {
-            particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
-        }
+        ctx.fillStyle = 'rgba(9, 10, 15, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        for (let i = 0; i < particles.length; i++) {
-            particles[i].update();
-            particles[i].draw();
-            if (particles[i].life <= 0) {
-                particles.splice(i, 1);
-                i--;
-            }
-        }
+        // 画星星
+        stars.forEach(s => {
+            ctx.fillStyle = `rgba(255,255,255,${Math.sin(Date.now()*0.001 + s.x)})`;
+            ctx.fillRect(s.x, s.y, s.size, s.size);
+        });
+
+        particles.forEach((p, i) => {
+            p.update(); p.draw();
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+
         requestAnimationFrame(animate);
     }
     animate();
 
-    const messages = [
-        "其实我观察你很久了...",
-        "每次看到你，心跳都会漏掉半拍",
-        "所以这颗心，早就偏向你了 ❤️"
-    ];
-    let msgIndex = 0;
-
+    // 点击事件
     heartBtn.onclick = function(e) {
-        // 粒子爆炸
-        createExplosion(e.clientX, e.clientY);
+        // 播放音乐
+        bgm.play();
+        title.style.opacity = '0';
         
-        // 震动反馈 (手机端)
-        if (navigator.vibrate) navigator.vibrate(50);
+        // 爆炸特效
+        for(let i=0; i<50; i++) particles.push(new Particle(e.clientX, e.clientY));
 
-        // 切换文案
-        if (msgIndex < messages.length) {
-            hint.style.display = 'none';
-            secretMsg.style.opacity = 0;
-            setTimeout(() => {
-                secretMsg.innerText = messages[msgIndex];
-                secretMsg.style.opacity = 1;
-                msgIndex++;
-            }, 200);
-        }
+        // 开始表白
+        if(lineIndex === 0) startTyping();
+        
+        // 手机震动
+        if (navigator.vibrate) navigator.vibrate(100);
     };
 </script>
-
 </body>
 </html>
