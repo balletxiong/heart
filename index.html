@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>送你一颗心</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #fff7f9 0%, #ffe3ea 100%);
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+        }
+
+        .heart {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            background: #ff4d6d;
+            transform: rotate(-45deg);
+            margin: 60px auto; /* 留出空间给爱心的圆弧部分 */
+            cursor: pointer;
+            box-shadow: -5px 5px 15px rgba(255, 77, 109, 0.3);
+            animation: beat 1.2s infinite;
+            transition: background 0.3s;
+        }
+
+        .heart:before,
+        .heart:after {
+            content: "";
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: #ff4d6d;
+            border-radius: 50%;
+        }
+
+        .heart:before {
+            top: -50px;
+            left: 0;
+        }
+
+        .heart:after {
+            left: 50px;
+            top: 0;
+        }
+
+        @keyframes beat {
+            0%, 100% { transform: rotate(-45deg) scale(1); }
+            50% { transform: rotate(-45deg) scale(1.1); }
+        }
+
+        .text {
+            margin-top: 50px;
+            font-size: 20px;
+            color: #e91e63;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #c2185b;
+        }
+
+        /* 修复动画抖动问题 */
+        .pop {
+            animation: pop 0.4s ease-out !important;
+        }
+
+        @keyframes pop {
+            0% { transform: rotate(-45deg) scale(1); }
+            50% { transform: rotate(-45deg) scale(1.3); }
+            100% { transform: rotate(-45deg) scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="heart" class="heart"></div>
+    <div class="text">
+        <div class="title">送你一颗心</div>
+        <div id="msg">点一下这颗心</div>
+    </div>
+</div>
+
+<script>
+    const heart = document.getElementById("heart");
+    const msg = document.getElementById("msg");
+    let isClicked = false;
+
+    heart.onclick = function () {
+        // 添加动画类
+        heart.classList.remove("pop");
+        void heart.offsetWidth; // 触发重绘，确保动画可以重复播放
+        heart.classList.add("pop");
+
+        // 改变文字
+        if(!isClicked) {
+            msg.style.opacity = 0;
+            setTimeout(() => {
+                msg.innerText = "其实这颗心，早就偏向你了 ❤️";
+                msg.style.opacity = 1;
+                msg.style.transition = "opacity 0.5s";
+            }, 200);
+            isClicked = true;
+        }
+    };
+</script>
+
+</body>
+</html>
